@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import './VideoController.css';
 
 const VideoController = ({ currentEmotion }) => {
-    const [activeSource, setActiveSource] = useState(`/videos/neutral.mp4`);
+    const [activeSource, setActiveSource] = useState(`/videos/idle.mp4`);
     const [nextSource, setNextSource] = useState(null);
     const [isCrossfading, setIsCrossfading] = useState(false);
 

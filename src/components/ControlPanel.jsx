@@ -2,11 +2,9 @@ import React from 'react';
 import './ControlPanel.css';
 
 const emotions = [
-    { id: 'neutral', label: 'Neutral', icon: '😐' },
-    { id: 'happy', label: 'Happy', icon: '😊' },
+    { id: 'idle', label: 'Idle', icon: '😐' },
     { id: 'sad', label: 'Sad', icon: '😔' },
     { id: 'angry', label: 'Angry', icon: '😠' },
-    { id: 'anxious', label: 'Anxious', icon: '😰' },
 ];
 
 const ControlPanel = ({ currentEmotion, onEmotionChange }) => {

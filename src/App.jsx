@@ -4,7 +4,7 @@ import ControlPanel from './components/ControlPanel';
 import './App.css';
 
 function App() {
-  const [currentEmotion, setCurrentEmotion] = useState('neutral');
+  const [currentEmotion, setCurrentEmotion] = useState('idle');
 
   const handleEmotionChange = (emotionId) => {
     console.log(`Switching execution to: ${emotionId}`);
