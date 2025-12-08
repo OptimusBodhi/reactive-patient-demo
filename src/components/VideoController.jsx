@@ -2,76 +2,74 @@ import React, { useState, useEffect, useRef } from 'react';
 import './VideoController.css';
 
 const VideoController = ({ currentEmotion }) => {
-    const [activeSource, setActiveSource] = useState(`/videos/idle.mp4`);
-    const [nextSource, setNextSource] = useState(null);
-    const [isCrossfading, setIsCrossfading] = useState(false);
+    // Independent source states for the two layers
+    const [src1, setSrc1] = useState(`/videos/idle.mp4`);
+    const [src2, setSrc2] = useState(null);
 
-    // We use two video refs to handle the crossfade
+    // Track which video is currently verified as "active" (visible)
+    const [activeRefIndex, setActiveRefIndex] = useState(1);
+
+    // Internal state to block rapid switching
+    const [isTransitioning, setIsTransitioning] = useState(false);
+
     const videoRef1 = useRef(null);
     const videoRef2 = useRef(null);
 
-    // Track which ref is currently "active" (visible)
-    const [activeRefIndex, setActiveRefIndex] = useState(1); // 1 or 2
-
     useEffect(() => {
-        // Initial load or when emotion changes
+        // When emotion changes, decide where to load the new video
+        if (isTransitioning) return;
+
         const newSource = `/videos/${currentEmotion}.mp4`;
 
-        // If it's the very first load/active source is same, do nothing (handling initial state is tricky, simplified here)
-        if (activeSource === newSource && !nextSource) return;
+        // Don't transition to the same source
+        const currentActiveSrc = activeRefIndex === 1 ? src1 : src2;
+        if (newSource === currentActiveSrc) return;
 
-        // Start transition
-        setNextSource(newSource);
-        setIsCrossfading(true);
+        // Start transition logic
+        setIsTransitioning(true);
+
+        const targetIndex = activeRefIndex === 1 ? 2 : 1;
+        const targetRef = activeRefIndex === 1 ? videoRef2 : videoRef1;
+        const setTargetSrc = activeRefIndex === 1 ? setSrc2 : setSrc1;
+
+        // 1. Set the source for the hidden layer
+        setTargetSrc(newSource);
+
+        // 2. Wait slightly for prop propagation / DOM update
+        setTimeout(() => {
+            if (targetRef.current) {
+                targetRef.current.load();
+                targetRef.current.muted = true;
+
+                targetRef.current.play().then(() => {
+                    // 3. Once playing, flip the visibility
+                    setActiveRefIndex(targetIndex);
+
+                    // 4. Persistence cleanup:
+                    // We DO NOT unset the old source immediately. 
+                    // We wait for the fade to complete (2.5s) AND then we unlock.
+                    // The old video keeps playing underneath until opacity is 0.
+                    setTimeout(() => {
+                        setIsTransitioning(false);
+                    }, 2500);
+
+                }).catch(err => {
+                    console.error("Play failed", err);
+                    setIsTransitioning(false);
+                });
+            }
+        }, 50);
 
     }, [currentEmotion]);
 
+    // Ensure mute on mount
     useEffect(() => {
-        // Force mute on mount/update to satisfy mobile policies
         if (videoRef1.current) videoRef1.current.muted = true;
         if (videoRef2.current) videoRef2.current.muted = true;
-
-        if (nextSource && isCrossfading) {
-            // Logic:
-            // Identify which video element is "next" (the invisible one)
-            const nextVideoRef = activeRefIndex === 1 ? videoRef2 : videoRef1;
-
-            // Load and play the next video
-            if (nextVideoRef.current) {
-                nextVideoRef.current.src = nextSource;
-                nextVideoRef.current.load();
-
-                // Ensure muted before playing
-                nextVideoRef.current.muted = true;
-
-                const playPromise = nextVideoRef.current.play();
-
-                if (playPromise !== undefined) {
-                    playPromise.then(() => {
-                        // Video is playing, trigger fade
-                        // Actual fade is handled by CSS classes based on activeRefIndex state change
-                        // But we wait for a brief moment to ensure it's rendering? 
-                        // Actually, let's just swap the index now.
-                        setActiveRefIndex(prev => prev === 1 ? 2 : 1);
-
-                        // After transition completes, cleanup
-                        setTimeout(() => {
-                            setIsCrossfading(false);
-                            setActiveSource(nextSource);
-                            setNextSource(null);
-                        }, 2500); // Matches CSS transition duration
-                    }).catch(error => {
-                        console.error("Auto-play prevented:", error);
-                    });
-                }
-            }
-        }
-    }, [nextSource, isCrossfading]);
-
+    }, []);
 
     return (
         <div className="video-container">
-            {/* Video 1 */}
             <video
                 ref={videoRef1}
                 className={`video-layer ${activeRefIndex === 1 ? 'visible' : 'hidden'}`}
@@ -79,13 +77,8 @@ const VideoController = ({ currentEmotion }) => {
                 muted
                 autoPlay
                 playsInline
-                // If it's active and no next source, it holds activeSource. 
-                // If it's inactive and waiting, it stays put until assigned.
-                // Initial state logic:
-                src={activeRefIndex === 1 ? activeSource : undefined}
+                src={src1 || undefined}
             />
-
-            {/* Video 2 */}
             <video
                 ref={videoRef2}
                 className={`video-layer ${activeRefIndex === 2 ? 'visible' : 'hidden'}`}
@@ -93,10 +86,8 @@ const VideoController = ({ currentEmotion }) => {
                 muted
                 autoPlay
                 playsInline
-                src={activeRefIndex === 2 ? activeSource : undefined}
+                src={src2 || undefined}
             />
-
-            {/* Overlay to darken slightly for UI visibility? Optional. */}
             <div className="video-overlay" />
         </div>
     );
