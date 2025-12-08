@@ -27,6 +27,10 @@ const VideoController = ({ currentEmotion }) => {
     }, [currentEmotion]);
 
     useEffect(() => {
+        // Force mute on mount/update to satisfy mobile policies
+        if (videoRef1.current) videoRef1.current.muted = true;
+        if (videoRef2.current) videoRef2.current.muted = true;
+
         if (nextSource && isCrossfading) {
             // Logic:
             // Identify which video element is "next" (the invisible one)
@@ -36,6 +40,10 @@ const VideoController = ({ currentEmotion }) => {
             if (nextVideoRef.current) {
                 nextVideoRef.current.src = nextSource;
                 nextVideoRef.current.load();
+
+                // Ensure muted before playing
+                nextVideoRef.current.muted = true;
+
                 const playPromise = nextVideoRef.current.play();
 
                 if (playPromise !== undefined) {
@@ -69,6 +77,7 @@ const VideoController = ({ currentEmotion }) => {
                 className={`video-layer ${activeRefIndex === 1 ? 'visible' : 'hidden'}`}
                 loop
                 muted
+                autoPlay
                 playsInline
                 // If it's active and no next source, it holds activeSource. 
                 // If it's inactive and waiting, it stays put until assigned.
@@ -82,6 +91,7 @@ const VideoController = ({ currentEmotion }) => {
                 className={`video-layer ${activeRefIndex === 2 ? 'visible' : 'hidden'}`}
                 loop
                 muted
+                autoPlay
                 playsInline
                 src={activeRefIndex === 2 ? activeSource : undefined}
             />
