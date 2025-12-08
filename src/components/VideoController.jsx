@@ -59,7 +59,7 @@ const VideoController = ({ currentEmotion }) => {
                             setIsCrossfading(false);
                             setActiveSource(nextSource);
                             setNextSource(null);
-                        }, 1000); // 1000ms matches CSS transition
+                        }, 2500); // Matches CSS transition duration
                     }).catch(error => {
                         console.error("Auto-play prevented:", error);
                     });
