@@ -22,3 +22,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Security & secret hygiene
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*service-account*.json
+.secrets/
